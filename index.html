@@ -1,48 +1,67 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebGIS ĐH Hà Nội</title>
+    <title>Web của Bình đẹp trai</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Leaflet -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 
     <style>
-        #map { height: 100vh; }
+        body, html { margin: 0; padding: 0; height: 100%; }
+        #title {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            background-color: #0077cc;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: calc(100vh - 50px); /* Trừ chiều cao của dòng tiêu đề */
+        }
     </style>
 </head>
 <body>
+
+    <!-- Dòng tiêu đề -->
+    <div id="title">Web của Bình đẹp trai</div>
+
+    <!-- Vùng bản đồ -->
     <div id="map"></div>
 
-    <!-- Scripts -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
-    <!-- Bing Layer (via Leaflet-providers) -->
     <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
 
     <script>
-        // Khởi tạo bản đồ
+        // Khởi tạo bản đồ tại ĐH Hà Nội
         var map = L.map('map', {
             center: [20.9808, 105.7872],
-            zoom: 15
+            zoom: 16
         });
 
-        // Các lớp nền (Base layers)
+        // ===== Các lớp nền (Base layers) =====
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            attribution: 'Google Satellite',
-            maxZoom: 20
+        var googleStreets = L.tileLayer('http://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            attribution: '© Google Maps'
         });
 
-        var bing = L.tileLayer.provider('BingAerial'); // từ leaflet-providers
+        var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '© Google Satellite'
+        });
 
-        // Overlay layer - Giao thông từ OpenStreetMap
+        var bing = L.tileLayer.provider('BingAerial');
+
+        // ===== Lớp overlay =====
         var traffic = L.tileLayer('https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png', {
             attribution: '© MemoMaps'
         });
@@ -50,26 +69,28 @@
         // Marker tại ĐH Hà Nội
         var marker = L.marker([20.9808, 105.7872]).bindPopup("Trường Đại học Hà Nội");
 
-        // Các lớp nền và overlay
+        // Tập hợp lớp nền
         var baseMaps = {
             "OpenStreetMap": osm,
-            "Google Earth (Satellite)": googleSat,
+            "Google Maps": googleStreets,
+            "Google Satellite": googleSat,
             "Bing Maps": bing
         };
 
+        // Tập hợp lớp overlay
         var overlayMaps = {
             "Giao thông": traffic,
-            "Vị trí ĐH Hà Nội": marker
+            "ĐH Hà Nội": marker
         };
 
-        // Thêm Layer Control
+        // Thêm control layer
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+        // Mặc định hiển thị marker
+        marker.addTo(map);
 
         // Thêm thanh tìm kiếm
         L.Control.geocoder().addTo(map);
-
-        // Thêm marker mặc định
-        marker.addTo(map);
     </script>
 </body>
 </html>
