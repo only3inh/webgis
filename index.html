@@ -1,17 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-    <title>Web của Bình đẹp trai</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web bản đồ tối ưu của Bình đẹp trai</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; background: #f0f4f8; }
         #title {
             font-size: 24px;
             font-weight: bold;
@@ -19,78 +18,109 @@
             padding: 10px;
             background-color: #0077cc;
             color: white;
-            font-family: Arial, sans-serif;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease;
+        }
+        #title:hover {
+            background-color: #005fa3;
         }
         #map {
-            height: calc(100vh - 50px); /* Trừ chiều cao của dòng tiêu đề */
+            height: calc(100vh - 50px);
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        #map:hover {
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+        /* Tối ưu cho mobile */
+        @media (max-width: 600px) {
+            #title { font-size: 20px; padding: 8px; }
+            #map { border-radius: 0; box-shadow: none; }
         }
     </style>
 </head>
 <body>
-
-    <!-- Dòng tiêu đề -->
-    <div id="title">Web của Bình đẹp trai</div>
-
-    <!-- Vùng bản đồ -->
-    <div id="map"></div>
+    <div id="title">Web bản đồ tối ưu của Bình đẹp trai</div>
+    <div id="map" loading="lazy"></div>
 
     <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js" defer></script>
+    <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js" defer></script>
 
-    <script>
-        // Khởi tạo bản đồ tại ĐH Hà Nội
-        var map = L.map('map', {
-            center: [20.9808, 105.7872],
-            zoom: 16
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('map', {
+                center: [20.9808, 105.7872],
+                zoom: 16,
+                preferCanvas: true // Tối ưu render với Canvas khi nhiều marker
+            });
+
+            // Các lớp nền
+            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            var googleStreets = L.tileLayer('http://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                attribution: '© Google Maps'
+            });
+
+            var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                attribution: '© Google Satellite'
+            });
+
+            var bing = L.tileLayer.provider('BingAerial');
+
+            // Lớp overlay giao thông
+            var traffic = L.tileLayer('https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png', {
+                attribution: '© MemoMaps'
+            });
+
+            // Marker tại ĐH Hà Nội
+            var marker = L.marker([20.9808, 105.7872], {title: "Trường Đại học Hà Nội"}).bindPopup("Trường Đại học Hà Nội");
+
+            // Sử dụng marker clustering để tối ưu khi có nhiều marker
+            var markers = L.markerClusterGroup();
+            markers.addLayer(marker);
+            map.addLayer(markers);
+
+            // Tập hợp lớp nền
+            var baseMaps = {
+                "OpenStreetMap": osm,
+                "Google Maps": googleStreets,
+                "Google Satellite": googleSat,
+                "Bing Maps": bing
+            };
+
+            // Tập hợp lớp overlay
+            var overlayMaps = {
+                "Giao thông": traffic,
+                "ĐH Hà Nội": markers
+            };
+
+            // Thêm control layer
+            L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+            // Thêm thanh tìm kiếm
+            L.Control.geocoder().addTo(map);
+
+            // Tối ưu: tránh cập nhật overlay khi map đang di chuyển liên tục
+            var updateTimeout;
+            map.on('moveend', function() {
+                clearTimeout(updateTimeout);
+                updateTimeout = setTimeout(function() {
+                    // Cập nhật overlay hoặc dữ liệu nếu cần
+                }, 500);
+            });
         });
-
-        // ===== Các lớp nền (Base layers) =====
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-
-        var googleStreets = L.tileLayer('http://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            attribution: '© Google Maps'
-        });
-
-        var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            attribution: '© Google Satellite'
-        });
-
-        var bing = L.tileLayer.provider('BingAerial');
-
-        // ===== Lớp overlay =====
-        var traffic = L.tileLayer('https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png', {
-            attribution: '© MemoMaps'
-        });
-
-        // Marker tại ĐH Hà Nội
-        var marker = L.marker([20.9808, 105.7872]).bindPopup("Trường Đại học Hà Nội");
-
-        // Tập hợp lớp nền
-        var baseMaps = {
-            "OpenStreetMap": osm,
-            "Google Maps": googleStreets,
-            "Google Satellite": googleSat,
-            "Bing Maps": bing
-        };
-
-        // Tập hợp lớp overlay
-        var overlayMaps = {
-            "Giao thông": traffic,
-            "ĐH Hà Nội": marker
-        };
-
-        // Thêm control layer
-        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
-
-        // Mặc định hiển thị marker
-        marker.addTo(map);
-
-        // Thêm thanh tìm kiếm
-        L.Control.geocoder().addTo(map);
     </script>
+
+    <!-- Thư viện marker clustering -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js" defer></script>
 </body>
 </html>
