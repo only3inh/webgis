@@ -8,6 +8,8 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
 
     <style>
         body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; background: #f0f4f8; }
@@ -35,7 +37,6 @@
         #map:hover {
             box-shadow: 0 6px 15px rgba(0,0,0,0.2);
         }
-        /* Tối ưu cho mobile */
         @media (max-width: 600px) {
             #title { font-size: 20px; padding: 8px; }
             #map { border-radius: 0; box-shadow: none; }
@@ -44,19 +45,21 @@
 </head>
 <body>
     <div id="title">Web bản đồ tối ưu của Bình đẹp trai</div>
-    <div id="map" loading="lazy"></div>
+    <div id="map"></div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js" defer></script>
-    <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js" defer></script>
+    <!-- Các thư viện JS đặt cuối để đảm bảo đã tải xong trước khi khởi tạo bản đồ -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
-    <script defer>
+    <script>
+        // Khởi tạo bản đồ khi DOM đã sẵn sàng và các thư viện đã tải xong
         document.addEventListener('DOMContentLoaded', function() {
             var map = L.map('map', {
                 center: [20.9808, 105.7872],
                 zoom: 16,
-                preferCanvas: true // Tối ưu render với Canvas khi nhiều marker
+                preferCanvas: true
             });
 
             // Các lớp nền
@@ -82,10 +85,9 @@
             // Marker tại ĐH Hà Nội
             var marker = L.marker([20.9808, 105.7872], {title: "Trường Đại học Hà Nội"}).bindPopup("Trường Đại học Hà Nội");
 
-            // Sử dụng marker clustering để tối ưu khi có nhiều marker
+            // Marker clustering
             var markers = L.markerClusterGroup();
             markers.addLayer(marker);
-            map.addLayer(markers);
 
             // Tập hợp lớp nền
             var baseMaps = {
@@ -104,6 +106,9 @@
             // Thêm control layer
             L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
+            // Thêm marker cluster vào map mặc định
+            markers.addTo(map);
+
             // Thêm thanh tìm kiếm
             L.Control.geocoder().addTo(map);
 
@@ -117,10 +122,5 @@
             });
         });
     </script>
-
-    <!-- Thư viện marker clustering -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js" defer></script>
 </body>
 </html>
