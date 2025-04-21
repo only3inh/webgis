@@ -1,127 +1,410 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <title>WebGIS Việt Nam</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>WebGIS Việt Nam</title>
+    
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css" />
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; }
-        #map { width: 100vw; height: 100vh; }
-        .leaflet-top.leaflet-right {
-            z-index: 1000;
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: Arial, sans-serif;
+        }
+        
+        #header {
+            background-color: #0077cc;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        #map {
+            height: calc(100% - 50px);
+            width: 100%;
+        }
+        
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+        
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777;
+        }
+        
+        .legend {
+            line-height: 18px;
+            color: #555;
+        }
+        
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        
+        .leaflet-control-layers {
+            max-height: 600px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
+    <div id="header">WebGIS Việt Nam</div>
     <div id="map"></div>
-
+    
     <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
-
+    
     <script>
-    // Các lớp nền
-    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    });
-
-    var googleStreets = L.tileLayer('http://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        attribution: '© Google Maps'
-    });
-
-    var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        attribution: '© Google Satellite'
-    });
-
-    var toner = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
-        attribution: 'Map tiles by Stamen Design'
-    });
-
-    var baseLayers = {
-        "OpenStreetMap": osm,
-        "Google Maps": googleStreets,
-        "Google Satellite": googleSat,
-        "Stamen Toner": toner
-    };
-
-    // Khởi tạo bản đồ
-    var map = L.map('map', {
-        center: [16.047079, 108.206230], // Trung tâm Việt Nam
-        zoom: 6,
-        layers: [osm]
-    });
-
-    // Marker vị trí ví dụ (Hà Nội)
-    var marker = L.marker([21.028511, 105.804817], {title: "Hà Nội"}).bindPopup("Thủ đô Hà Nội");
-    var markers = L.markerClusterGroup();
-    markers.addLayer(marker);
-
-    // Overlay các tỉnh Việt Nam (dùng GeoJSON)
-    var provincesLayer = L.geoJson(null, {
-        style: function(feature) {
-            return {
-                color: "#3388ff",
-                weight: 1,
-                fillOpacity: 0.1
-            };
-        },
-        onEachFeature: function(feature, layer) {
-            if (feature.properties && feature.properties.name) {
-                layer.bindPopup(feature.properties.name);
-            }
-        }
-    });
-
-    // Tải GeoJSON các tỉnh Việt Nam (dùng nguồn công khai, ví dụ từ SimpleMaps hoặc OD Mekong)
-    fetch('https://raw.githubusercontent.com/datasets/geo-admin1-us/master/data/vietnam-provinces.geojson')
-        .then(res => res.json())
-        .then(data => {
-            provincesLayer.addData(data);
+        // Khởi tạo bản đồ
+        const map = L.map('map', {
+            center: [16.0, 106.0], // Trung tâm Việt Nam
+            zoom: 6,
+            minZoom: 5,
+            maxZoom: 18
         });
-
-    var overlays = {
-        "Marker vị trí": markers,
-        "Ranh giới tỉnh": provincesLayer
-    };
-
-    // Control chọn lớp ở góc phải trên
-    L.control.layers(baseLayers, overlays, {position: 'topright', collapsed: false}).addTo(map);
-
-    // Thêm marker vào map mặc định
-    markers.addTo(map);
-
-    // Thêm overlay ranh giới tỉnh mặc định
-    provincesLayer.addTo(map);
-
-    // Search box tìm marker và các tỉnh
-    var searchControl = new L.Control.Search({
-        layer: L.layerGroup([markers, provincesLayer]),
-        propertyName: 'name',
-        marker: false,
-        moveToLocation: function(latlng, title, map) {
-            map.setView(latlng, 8);
-        },
-        textPlaceholder: 'Tìm kiếm vị trí hoặc tỉnh...',
-        position: 'topleft'
-    });
-    map.addControl(searchControl);
-
-    // Thêm tìm kiếm địa danh toàn cầu (Leaflet Control Geocoder)
-    L.Control.geocoder({
-        position: 'topleft'
-    }).addTo(map);
-
+        
+        // Các lớp nền (base layers)
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        const cartoDBLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        });
+        
+        const googleStreets = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '&copy; Google Maps'
+        });
+        
+        const googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '&copy; Google Satellite'
+        });
+        
+        const esriWorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+        
+        // Tạo nhóm marker cluster
+        const markers = L.markerClusterGroup();
+        
+        // Thêm marker cho một số thành phố lớn của Việt Nam
+        const cities = [
+            {name: "Hà Nội", lat: 21.02833, lng: 105.85417},
+            {name: "Hồ Chí Minh", lat: 10.8, lng: 106.65},
+            {name: "Đà Nẵng", lat: 16.06944, lng: 108.20972},
+            {name: "Hải Phòng", lat: 20.865139, lng: 106.683833},
+            {name: "Cần Thơ", lat: 10.033, lng: 105.783},
+            {name: "Huế", lat: 16.333, lng: 107.583}
+        ];
+        
+        cities.forEach(city => {
+            const marker = L.marker([city.lat, city.lng])
+                .bindPopup(`<b>${city.name}</b>`);
+            markers.addLayer(marker);
+        });
+        
+        map.addLayer(markers);
+        
+        // Tạo style cho các tỉnh
+        function getColor(d) {
+            return d > 7000000 ? '#800026' :
+                   d > 5000000 ? '#BD0026' :
+                   d > 3000000 ? '#E31A1C' :
+                   d > 2000000 ? '#FC4E2A' :
+                   d > 1000000 ? '#FD8D3C' :
+                   d > 500000 ? '#FEB24C' :
+                   d > 200000 ? '#FED976' :
+                              '#FFEDA0';
+        }
+        
+        function style(feature) {
+            return {
+                fillColor: getColor(feature.properties.population || 500000),
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
+        
+        // Highlight tỉnh khi hover
+        function highlightFeature(e) {
+            const layer = e.target;
+            
+            layer.setStyle({
+                weight: 3,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.7
+            });
+            
+            layer.bringToFront();
+            info.update(layer.feature.properties);
+        }
+        
+        function resetHighlight(e) {
+            geojsonLayer.resetStyle(e.target);
+            info.update();
+        }
+        
+        function zoomToFeature(e) {
+            map.fitBounds(e.target.getBounds());
+        }
+        
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight,
+                click: zoomToFeature
+            });
+        }
+        
+        // Thêm control thông tin
+        const info = L.control();
+        
+        info.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info');
+            this.update();
+            return this._div;
+        };
+        
+        info.update = function (props) {
+            this._div.innerHTML = '<h4>Thông tin tỉnh/thành phố</h4>' +  
+                (props ? '<b>' + props.name + '</b><br />' + 
+                (props.population ? props.population.toLocaleString() + ' người' : 'Không có dữ liệu dân số') : 'Di chuột qua một tỉnh');
+        };
+        
+        info.addTo(map);
+        
+        // Tạo legend
+        const legend = L.control({position: 'bottomright'});
+        
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            const grades = [0, 200000, 500000, 1000000, 2000000, 3000000, 5000000, 7000000];
+            const labels = [];
+            
+            // Tạo legend với các mức dân số
+            div.innerHTML = '<h4>Dân số</h4>';
+            
+            for (let i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                    grades[i].toLocaleString() + (grades[i + 1] ? '&ndash;' + grades[i + 1].toLocaleString() + '<br>' : '+');
+            }
+            
+            return div;
+        };
+        
+        legend.addTo(map);
+        
+        // Tạo lớp GeoJSON cho các tỉnh Việt Nam
+        let geojsonLayer;
+        
+        // Giả sử chúng ta có dữ liệu GeoJSON của các tỉnh Việt Nam
+        // Trong thực tế, bạn sẽ cần tải file GeoJSON từ server
+        // Ở đây tôi sẽ tạo một mẫu đơn giản để minh họa
+        const vietnamProvinces = {
+            "type": "FeatureCollection",
+            "features": []
+        };
+        
+        // Lấy dữ liệu tỉnh từ API hoặc file JSON
+        fetch('https://raw.githubusercontent.com/daohoangson/dvhcvn/master/data/dvhcvn.json')
+            .then(response => response.json())
+            .then(data => {
+                // Xử lý dữ liệu và tạo GeoJSON layer
+                // Đây là một ví dụ đơn giản, trong thực tế bạn cần xử lý dữ liệu phức tạp hơn
+                geojsonLayer = L.geoJSON(vietnamProvinces, {
+                    style: style,
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+                
+                // Thêm vào control layers
+                const baseMaps = {
+                    "OpenStreetMap": osmLayer,
+                    "CartoDB Light": cartoDBLayer,
+                    "Google Streets": googleStreets,
+                    "Google Satellite": googleSat,
+                    "ESRI World Imagery": esriWorldImagery
+                };
+                
+                const overlayMaps = {
+                    "Các thành phố lớn": markers,
+                    "Ranh giới tỉnh": geojsonLayer
+                };
+                
+                L.control.layers(baseMaps, overlayMaps, {collapsed: false, position: 'topright'}).addTo(map);
+            })
+            .catch(error => console.error('Error loading province data:', error));
+        
+        // Thêm thanh tìm kiếm
+        const geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false,
+            position: 'topleft',
+            placeholder: 'Tìm kiếm địa điểm...',
+            errorMessage: 'Không tìm thấy địa điểm'
+        }).on('markgeocode', function(e) {
+            const bbox = e.geocode.bbox;
+            const poly = L.polygon([
+                bbox.getSouthEast(),
+                bbox.getNorthEast(),
+                bbox.getNorthWest(),
+                bbox.getSouthWest()
+            ]);
+            
+            map.fitBounds(poly.getBounds());
+            
+            // Thêm marker tại vị trí tìm kiếm
+            const marker = L.marker(e.geocode.center)
+                .bindPopup(e.geocode.name)
+                .addTo(map)
+                .openPopup();
+                
+            // Thêm vào cluster nếu muốn
+            // markers.addLayer(marker);
+        }).addTo(map);
+        
+        // Thêm control tỷ lệ
+        L.control.scale({imperial: false, position: 'bottomleft'}).addTo(map);
+        
+        // Thêm chức năng hiển thị tọa độ khi click
+        const popup = L.popup();
+        
+        function onMapClick(e) {
+            popup
+                .setLatLng(e.latlng)
+                .setContent("Tọa độ: " + e.latlng.lat.toFixed(5) + ", " + e.latlng.lng.toFixed(5))
+                .openOn(map);
+        }
+        
+        map.on('click', onMapClick);
+        
+        // Tải dữ liệu tỉnh thành Việt Nam
+        // Trong thực tế, bạn cần tạo hoặc tìm file GeoJSON chứa ranh giới các tỉnh
+        // Dưới đây là một ví dụ về cách tải và xử lý dữ liệu
+        
+        // Tạo một danh sách các tỉnh Việt Nam với tọa độ trung tâm
+        const vietnamProvincesData = [
+            {name: "Hà Nội", lat: 21.02833, lng: 105.85417, population: 8053663},
+            {name: "Hồ Chí Minh", lat: 10.8, lng: 106.65, population: 8993082},
+            {name: "Đà Nẵng", lat: 16.06944, lng: 108.20972, population: 1134310},
+            {name: "Hải Phòng", lat: 20.865139, lng: 106.683833, population: 2013092},
+            {name: "Cần Thơ", lat: 10.033, lng: 105.783, population: 1235171},
+            {name: "Bắc Giang", lat: 21.333, lng: 106.333, population: 1803950},
+            {name: "Bắc Kạn", lat: 22.167, lng: 105.833, population: 313905},
+            {name: "Cao Bằng", lat: 22.667, lng: 106, population: 530341},
+            {name: "Hà Giang", lat: 22.75, lng: 105, population: 854679},
+            {name: "Lạng Sơn", lat: 21.75, lng: 106.5, population: 782811},
+            {name: "Phú Thọ", lat: 21.333, lng: 105.167, population: 1463726},
+            {name: "Quảng Ninh", lat: 21.25, lng: 107.333, population: 1320324},
+            {name: "Thái Nguyên", lat: 21.667, lng: 105.833, population: 1286751},
+            {name: "Tuyên Quang", lat: 22.117, lng: 105.25, population: 786258},
+            {name: "Lào Cai", lat: 22.333, lng: 104, population: 730420},
+            {name: "Yên Bái", lat: 21.5, lng: 104.667, population: 821030},
+            {name: "Điện Biên", lat: 21.383, lng: 103.017, population: 598856},
+            {name: "Hòa Bình", lat: 20.333, lng: 105.25, population: 854131},
+            {name: "Lai Châu", lat: 22, lng: 103, population: 460196},
+            {name: "Sơn La", lat: 21.167, lng: 104, population: 1248415},
+            {name: "Bắc Ninh", lat: 21.083, lng: 106.167, population: 1368840},
+            {name: "Hà Nam", lat: 20.583, lng: 106, population: 852898},
+            {name: "Hải Dương", lat: 20.917, lng: 106.333, population: 1892254},
+            {name: "Hưng Yên", lat: 20.833, lng: 106.083, population: 1252731},
+            {name: "Nam Định", lat: 20.25, lng: 106.25, population: 1892000},
+            {name: "Ninh Bình", lat: 20.25, lng: 105.833, population: 982487},
+            {name: "Thái Bình", lat: 20.5, lng: 106.333, population: 1868800},
+            {name: "Vĩnh Phúc", lat: 21.3, lng: 105.6, population: 1154156},
+            {name: "Hà Tĩnh", lat: 18.333, lng: 105.9, population: 1288866},
+            {name: "Nghệ An", lat: 19.333, lng: 104.833, population: 3327791},
+            {name: "Quảng Bình", lat: 17.5, lng: 106.333, population: 896599},
+            {name: "Quảng Trị", lat: 16.75, lng: 107, population: 632375},
+            {name: "Thanh Hóa", lat: 20, lng: 105.5, population: 3640128},
+            {name: "Thừa Thiên-Huế", lat: 16.333, lng: 107.583, population: 1163591},
+            {name: "Đắk Lắk", lat: 12.667, lng: 108.05, population: 1896623},
+            {name: "Đắk Nông", lat: 11.983, lng: 107.7, population: 645413},
+            {name: "Gia Lai", lat: 13.75, lng: 108.25, population: 1513847},
+            {name: "Kon Tum", lat: 14.75, lng: 107.917, population: 540438},
+            {name: "Lâm Đồng", lat: 11.95, lng: 108.433, population: 1298145},
+            {name: "Bình Định", lat: 14.167, lng: 109, population: 1529038},
+            {name: "Bình Thuận", lat: 10.933, lng: 108.1, population: 1230408},
+            {name: "Khánh Hòa", lat: 12.25, lng: 109.2, population: 1232835},
+            {name: "Ninh Thuận", lat: 11.75, lng: 108.833, population: 590467},
+            {name: "Phú Yên", lat: 13.167, lng: 109.167, population: 899925},
+            {name: "Quảng Nam", lat: 15.58333, lng: 107.91667, population: 1493804},
+            {name: "Quảng Ngãi", lat: 15, lng: 108.667, population: 1231697},
+            {name: "Bà Rịa-Vũng Tàu", lat: 10.583, lng: 107.25, population: 1148313},
+            {name: "Bình Dương", lat: 11.167, lng: 106.667, population: 2426561},
+            {name: "Bình Phước", lat: 11.75, lng: 106.917, population: 994679},
+            {name: "Đồng Nai", lat: 11.117, lng: 107.183, population: 3097107},
+            {name: "Tây Ninh", lat: 11.333, lng: 106.167, population: 1169165},
+            {name: "An Giang", lat: 10.5, lng: 105.167, population: 1908352},
+            {name: "Bạc Liêu", lat: 9.25, lng: 105.75, population: 873400},
+            {name: "Bến Tre", lat: 10.167, lng: 106.5, population: 1288463},
+            {name: "Cà Mau", lat: 9.083, lng: 105.083, population: 1194476},
+            {name: "Đồng Tháp", lat: 10.667, lng: 105.667, population: 1599504},
+            {name: "Hậu Giang", lat: 9.783, lng: 105.467, population: 733017},
+            {name: "Kiên Giang", lat: 10, lng: 105.167, population: 1726188},
+            {name: "Long An", lat: 10.667, lng: 106.167, population: 1688547},
+            {name: "Sóc Trăng", lat: 9.667, lng: 105.833, population: 1199741},
+            {name: "Tiền Giang", lat: 10.417, lng: 106.167, population: 1764185},
+            {name: "Trà Vinh", lat: 9.833, lng: 106.25, population: 1009168},
+            {name: "Vĩnh Long", lat: 10.167, lng: 106, population: 1022791}
+        ];
+        
+        // Tạo một lớp mới để hiển thị các tỉnh dưới dạng circle marker
+        const provinceCircles = L.layerGroup();
+        
+        vietnamProvincesData.forEach(province => {
+            const circleMarker = L.circleMarker([province.lat, province.lng], {
+                radius: Math.sqrt(province.population) / 300,
+                fillColor: getColor(province.population),
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).bindPopup(`<b>${province.name}</b><br>Dân số: ${province.population.toLocaleString()} người`);
+            
+            provinceCircles.addLayer(circleMarker);
+        });
+        
+        // Thêm lớp circle marker vào bản đồ
+        provinceCircles.addTo(map);
+        
+        // Cập nhật overlayMaps để thêm lớp mới
+        const additionalOverlays = {
+            "Dân số tỉnh": provinceCircles
+        };
+        
+        // Thêm control layers mới (sẽ được cập nhật sau khi tải dữ liệu GeoJSON)
     </script>
 </body>
 </html>
