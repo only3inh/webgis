@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebGIS - Đại học Hà Nội</title>
+    <title>WebGIS ĐH Hà Nội</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Leaflet CSS -->
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    
-    <!-- Leaflet Geocoder CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
 
     <style>
@@ -18,31 +16,60 @@
 <body>
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-    <!-- Leaflet Geocoder JS -->
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
+    <!-- Bing Layer (via Leaflet-providers) -->
+    <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
+
     <script>
-        // Khởi tạo bản đồ tại Đại học Hà Nội
-        var map = L.map('map').setView([20.9808, 105.7872], 16);
+        // Khởi tạo bản đồ
+        var map = L.map('map', {
+            center: [20.9808, 105.7872],
+            zoom: 15
+        });
 
-        // Lớp bản đồ nền từ OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+        // Các lớp nền (Base layers)
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Marker tại Đại học Hà Nội
-        L.marker([20.9808, 105.7872]).addTo(map)
-            .bindPopup('Trường Đại học Hà Nội<br>Km9 Nguyễn Trãi, Hà Nội')
-            .openPopup();
+        var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: 'Google Satellite',
+            maxZoom: 20
+        });
 
-        // Thêm thanh tìm kiếm địa điểm
-        L.Control.geocoder({
-            defaultMarkGeocode: true
-        }).addTo(map);
+        var bing = L.tileLayer.provider('BingAerial'); // từ leaflet-providers
+
+        // Overlay layer - Giao thông từ OpenStreetMap
+        var traffic = L.tileLayer('https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png', {
+            attribution: '© MemoMaps'
+        });
+
+        // Marker tại ĐH Hà Nội
+        var marker = L.marker([20.9808, 105.7872]).bindPopup("Trường Đại học Hà Nội");
+
+        // Các lớp nền và overlay
+        var baseMaps = {
+            "OpenStreetMap": osm,
+            "Google Earth (Satellite)": googleSat,
+            "Bing Maps": bing
+        };
+
+        var overlayMaps = {
+            "Giao thông": traffic,
+            "Vị trí ĐH Hà Nội": marker
+        };
+
+        // Thêm Layer Control
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+        // Thêm thanh tìm kiếm
+        L.Control.geocoder().addTo(map);
+
+        // Thêm marker mặc định
+        marker.addTo(map);
     </script>
 </body>
 </html>
