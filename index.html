@@ -2,125 +2,126 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web bản đồ tối ưu của Bình đẹp trai</title>
+    <title>WebGIS Việt Nam</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css" />
 
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; background: #f0f4f8; }
-        #title {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            padding: 10px;
-            background-color: #0077cc;
-            color: white;
-            user-select: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: background-color 0.3s ease;
-        }
-        #title:hover {
-            background-color: #005fa3;
-        }
-        #map {
-            height: calc(100vh - 50px);
-            width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: box-shadow 0.3s ease;
-        }
-        #map:hover {
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-        }
-        @media (max-width: 600px) {
-            #title { font-size: 20px; padding: 8px; }
-            #map { border-radius: 0; box-shadow: none; }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+        .leaflet-top.leaflet-right {
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
-    <div id="title">Web bản đồ tối ưu của Bình đẹp trai</div>
     <div id="map"></div>
 
-    <!-- Các thư viện JS đặt cuối để đảm bảo đã tải xong trước khi khởi tạo bản đồ -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
 
     <script>
-        // Khởi tạo bản đồ khi DOM đã sẵn sàng và các thư viện đã tải xong
-        document.addEventListener('DOMContentLoaded', function() {
-            var map = L.map('map', {
-                center: [20.9808, 105.7872],
-                zoom: 16,
-                preferCanvas: true
-            });
+    // Các lớp nền
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    });
 
-            // Các lớp nền
-            var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
+    var googleStreets = L.tileLayer('http://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        attribution: '© Google Maps'
+    });
 
-            var googleStreets = L.tileLayer('http://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                attribution: '© Google Maps'
-            });
+    var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        attribution: '© Google Satellite'
+    });
 
-            var googleSat = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-                attribution: '© Google Satellite'
-            });
+    var toner = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/toner/{z}/{x}/{y}.png', {
+        attribution: 'Map tiles by Stamen Design'
+    });
 
-            var bing = L.tileLayer.provider('BingAerial');
+    var baseLayers = {
+        "OpenStreetMap": osm,
+        "Google Maps": googleStreets,
+        "Google Satellite": googleSat,
+        "Stamen Toner": toner
+    };
 
-            // Lớp overlay giao thông
-            var traffic = L.tileLayer('https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png', {
-                attribution: '© MemoMaps'
-            });
+    // Khởi tạo bản đồ
+    var map = L.map('map', {
+        center: [16.047079, 108.206230], // Trung tâm Việt Nam
+        zoom: 6,
+        layers: [osm]
+    });
 
-            // Marker tại ĐH Hà Nội
-            var marker = L.marker([20.9808, 105.7872], {title: "Trường Đại học Hà Nội"}).bindPopup("Trường Đại học Hà Nội");
+    // Marker vị trí ví dụ (Hà Nội)
+    var marker = L.marker([21.028511, 105.804817], {title: "Hà Nội"}).bindPopup("Thủ đô Hà Nội");
+    var markers = L.markerClusterGroup();
+    markers.addLayer(marker);
 
-            // Marker clustering
-            var markers = L.markerClusterGroup();
-            markers.addLayer(marker);
-
-            // Tập hợp lớp nền
-            var baseMaps = {
-                "OpenStreetMap": osm,
-                "Google Maps": googleStreets,
-                "Google Satellite": googleSat,
-                "Bing Maps": bing
+    // Overlay các tỉnh Việt Nam (dùng GeoJSON)
+    var provincesLayer = L.geoJson(null, {
+        style: function(feature) {
+            return {
+                color: "#3388ff",
+                weight: 1,
+                fillOpacity: 0.1
             };
+        },
+        onEachFeature: function(feature, layer) {
+            if (feature.properties && feature.properties.name) {
+                layer.bindPopup(feature.properties.name);
+            }
+        }
+    });
 
-            // Tập hợp lớp overlay
-            var overlayMaps = {
-                "Giao thông": traffic,
-                "ĐH Hà Nội": markers
-            };
-
-            // Thêm control layer
-            L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
-
-            // Thêm marker cluster vào map mặc định
-            markers.addTo(map);
-
-            // Thêm thanh tìm kiếm
-            L.Control.geocoder().addTo(map);
-
-            // Tối ưu: tránh cập nhật overlay khi map đang di chuyển liên tục
-            var updateTimeout;
-            map.on('moveend', function() {
-                clearTimeout(updateTimeout);
-                updateTimeout = setTimeout(function() {
-                    // Cập nhật overlay hoặc dữ liệu nếu cần
-                }, 500);
-            });
+    // Tải GeoJSON các tỉnh Việt Nam (dùng nguồn công khai, ví dụ từ SimpleMaps hoặc OD Mekong)
+    fetch('https://raw.githubusercontent.com/datasets/geo-admin1-us/master/data/vietnam-provinces.geojson')
+        .then(res => res.json())
+        .then(data => {
+            provincesLayer.addData(data);
         });
+
+    var overlays = {
+        "Marker vị trí": markers,
+        "Ranh giới tỉnh": provincesLayer
+    };
+
+    // Control chọn lớp ở góc phải trên
+    L.control.layers(baseLayers, overlays, {position: 'topright', collapsed: false}).addTo(map);
+
+    // Thêm marker vào map mặc định
+    markers.addTo(map);
+
+    // Thêm overlay ranh giới tỉnh mặc định
+    provincesLayer.addTo(map);
+
+    // Search box tìm marker và các tỉnh
+    var searchControl = new L.Control.Search({
+        layer: L.layerGroup([markers, provincesLayer]),
+        propertyName: 'name',
+        marker: false,
+        moveToLocation: function(latlng, title, map) {
+            map.setView(latlng, 8);
+        },
+        textPlaceholder: 'Tìm kiếm vị trí hoặc tỉnh...',
+        position: 'topleft'
+    });
+    map.addControl(searchControl);
+
+    // Thêm tìm kiếm địa danh toàn cầu (Leaflet Control Geocoder)
+    L.Control.geocoder({
+        position: 'topleft'
+    }).addTo(map);
+
     </script>
 </body>
 </html>
