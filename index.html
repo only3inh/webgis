@@ -2,39 +2,32 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <title>WebGIS Việt Nam - Ranh giới tỉnh, Marker tùy chọn tên</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGIS Việt Nam - Ranh giới tỉnh, Marker, Đo khoảng cách</title>
-    <!-- Leaflet CSS -->
+    <!-- Leaflet & plugin CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
     <link rel="stylesheet" href="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.css"/>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: Arial, sans-serif; }
+        html, body { height: 100%; margin: 0; padding: 0; }
         #map { height: 100vh; width: 100vw; }
         #header {
-            position: absolute;
-            top: 10px; left: 50%; transform: translateX(-50%);
-            z-index: 1001;
-            background: #0077cc; color: white; padding: 8px 20px;
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 1001; background: #0077cc; color: white; padding: 8px 20px;
             border-radius: 6px; font-size: 20px; font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .marker-count-box {
-            position: absolute;
-            bottom: 15px; left: 15px;
-            z-index: 1001;
-            background: rgba(255,255,255,0.92);
-            padding: 7px 15px;
-            border-radius: 6px;
-            font-size: 15px;
-            color: #333;
+            position: absolute; bottom: 15px; left: 15px; z-index: 1001;
+            background: rgba(255,255,255,0.92); padding: 7px 15px;
+            border-radius: 6px; font-size: 15px; color: #333;
             box-shadow: 0 2px 8px rgba(0,0,0,0.10);
         }
-        .leaflet-control-polyline-measure {
-            z-index: 1100 !important;
-        }
+        .custom-popup label { display: block; margin-bottom: 4px; }
+        .custom-popup input[type="text"] { width: 90%; padding: 4px;}
+        .custom-popup button { margin-top: 4px; }
         @media (max-width: 600px) {
             #header { font-size: 16px; padding: 6px 10px; }
             .marker-count-box { font-size: 13px; padding: 4px 8px; }
@@ -42,26 +35,26 @@
     </style>
 </head>
 <body>
-    <div id="header">WebGIS Việt Nam: Ranh giới tỉnh, Marker, Đo khoảng cách</div>
+    <div id="header">WebGIS Việt Nam: Ranh giới tỉnh, Marker đặt tên, Đo khoảng cách</div>
     <div id="map"></div>
     <div class="marker-count-box" id="markerCountBox">Số marker: 0</div>
 
-    <!-- Leaflet JS và plugin -->
+    <!-- Leaflet & plugin JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
     <script src="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.js"></script>
-
     <script>
-    // Tạo bản đồ và các lớp nền
+    // Khởi tạo bản đồ
     var map = L.map('map', {
-        center: [16.0, 106.0],
+        center: [16, 106],
         zoom: 6,
         minZoom: 5,
         maxZoom: 18
     });
 
+    // Các lớp nền
     var baseLayers = {
         "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
@@ -82,31 +75,68 @@
         })
     };
 
-    // Tạo marker cluster group, cho phép kéo thả marker
+    // Nhóm marker cluster
     var markerCluster = L.markerClusterGroup();
-    var cityData = [
-        {name: "Hà Nội", lat: 21.02833, lng: 105.85417},
-        {name: "Hồ Chí Minh", lat: 10.8, lng: 106.65},
-        {name: "Đà Nẵng", lat: 16.06944, lng: 108.20972},
-        {name: "Hải Phòng", lat: 20.865139, lng: 106.683833},
-        {name: "Cần Thơ", lat: 10.033, lng: 105.783},
-        {name: "Huế", lat: 16.333, lng: 107.583}
-    ];
+
+    // Hàm cập nhật số lượng marker
     function updateMarkerCount() {
         document.getElementById('markerCountBox').innerText = "Số marker: " + markerCluster.getLayers().length;
     }
+
+    // Hàm tạo popup nhập tên marker
+    function createInputPopup(latlng) {
+        var container = L.DomUtil.create('div', 'custom-popup');
+        container.innerHTML = `
+            <label>Đặt tên marker:</label>
+            <input type="text" id="markerName" placeholder="VD: Nhà riêng, Cơ quan..." autofocus/>
+            <button id="addMarkerBtn">Thêm marker</button>
+        `;
+        var popup = L.popup()
+            .setLatLng(latlng)
+            .setContent(container)
+            .openOn(map);
+
+        setTimeout(function() {
+            document.getElementById('markerName').focus();
+        }, 100);
+
+        document.getElementById('addMarkerBtn').onclick = function() {
+            var name = document.getElementById('markerName').value || 'Marker chưa đặt tên';
+            var marker = L.marker(latlng, {draggable:true})
+                .bindPopup('<b>' + name + '</b>')
+                .addTo(markerCluster)
+                .openPopup();
+            marker.on('dragend', function(e){
+                var pos = e.target.getLatLng();
+                e.target.setPopupContent('<b>' + name + '</b><br>Lat: ' + pos.lat.toFixed(5) + ', Lng: ' + pos.lng.toFixed(5));
+            });
+            map.closePopup();
+            updateMarkerCount();
+        };
+    }
+
+    // Thêm marker bằng double click
+    map.on('dblclick', function(e) {
+        createInputPopup(e.latlng);
+    });
+
+    // Khởi tạo một số marker mẫu
+    var cityData = [
+        {name: "Hà Nội", lat: 21.02833, lng: 105.85417},
+        {name: "Hồ Chí Minh", lat: 10.8, lng: 106.65},
+        {name: "Đà Nẵng", lat: 16.06944, lng: 108.20972}
+    ];
     cityData.forEach(function(city) {
         var marker = L.marker([city.lat, city.lng], {draggable:true})
-            .bindPopup(`<b>${city.name}</b>`)
-            .on('dragend', function(e){
-                var pos = e.target.getLatLng();
-                e.target.setPopupContent(`<b>${city.name}</b><br>Lat: ${pos.lat.toFixed(5)}, Lng: ${pos.lng.toFixed(5)}`);
-            });
+            .bindPopup('<b>' + city.name + '</b>');
+        marker.on('dragend', function(e){
+            var pos = e.target.getLatLng();
+            e.target.setPopupContent('<b>' + city.name + '</b><br>Lat: ' + pos.lat.toFixed(5) + ', Lng: ' + pos.lng.toFixed(5));
+        });
         markerCluster.addLayer(marker);
     });
     map.addLayer(markerCluster);
     markerCluster.on('clusterclick', function (a) {
-        // Zoom vào cluster khi click
         map.fitBounds(a.layer.getBounds());
     });
     markerCluster.on('animationend', updateMarkerCount);
@@ -114,19 +144,7 @@
     markerCluster.on('layerremove', updateMarkerCount);
     updateMarkerCount();
 
-    // Cho phép thêm marker mới bằng cách click trên bản đồ
-    map.on('dblclick', function(e){
-        var marker = L.marker(e.latlng, {draggable:true})
-            .bindPopup(`<b>Marker mới</b><br>Lat: ${e.latlng.lat.toFixed(5)}, Lng: ${e.latlng.lng.toFixed(5)}`)
-            .on('dragend', function(e){
-                var pos = e.target.getLatLng();
-                e.target.setPopupContent(`<b>Marker mới</b><br>Lat: ${pos.lat.toFixed(5)}, Lng: ${pos.lng.toFixed(5)}`);
-            });
-        markerCluster.addLayer(marker);
-        updateMarkerCount();
-    });
-
-    // Thêm search box
+    // Search box
     L.Control.geocoder({
         defaultMarkGeocode: false,
         placeholder: 'Tìm kiếm địa điểm...',
@@ -134,46 +152,34 @@
     })
     .on('markgeocode', function(e) {
         map.setView(e.geocode.center, 12);
-        var marker = L.marker(e.geocode.center, {draggable:true})
-            .bindPopup(`<b>${e.geocode.name}</b>`)
-            .openPopup();
-        markerCluster.addLayer(marker);
-        updateMarkerCount();
+        createInputPopup(e.geocode.center);
     })
     .addTo(map);
 
-    // Thêm overlay ranh giới tỉnh Việt Nam (ADM1)
-    // Bạn có thể thay đổi đường dẫn GeoJSON bên dưới bằng nguồn dữ liệu cập nhật hơn nếu muốn
+    // Overlay ranh giới tỉnh Việt Nam (GeoJSON)
     var provinceBoundaryLayer;
-    fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
-    .then(res => res.json())
-    .then(worldData => {
-        // Lọc chỉ lấy các polygon của Việt Nam
-        var provinces = worldData.features.filter(f => f.properties.name === "Vietnam");
-        // Nếu có dữ liệu ranh giới tỉnh riêng, hãy thay thế đoạn này bằng dữ liệu ADM1 của VN
-        // Ví dụ: https://data.humdata.org/dataset/geoboundaries-admin-boundaries-for-viet-nam [2]
-        // hoặc https://data.opendevelopmentmekong.net/dataset/a-phn-tnh [1]
-        provinceBoundaryLayer = L.geoJSON(provinces, {
-            style: {
-                color: "#FF6600",
-                weight: 2,
-                fillOpacity: 0.03
-            }
-        }).addTo(map);
-        layerControl.addOverlay(provinceBoundaryLayer, "Ranh giới tỉnh");
-    });
+    fetch('Vietnam_districts.geojson')
+        .then(res => res.json())
+        .then(geojson => {
+            provinceBoundaryLayer = L.geoJSON(geojson, {
+                style: { color: '#FF6600', weight: 1, fillOpacity: 0.05 },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties && feature.properties.NAME_1) {
+                        layer.bindPopup('Tỉnh: <b>' + feature.properties.NAME_1 + '</b>');
+                    }
+                }
+            }).addTo(map);
+            layerControl.addOverlay(provinceBoundaryLayer, "Ranh giới tỉnh");
+        });
 
-    // Nếu bạn có file GeoJSON ranh giới tỉnh chuẩn, hãy thay fetch bên trên bằng:
-    // fetch('https://data.humdata.org/dataset/geoboundaries-admin-boundaries-for-viet-nam/resource/geoBoundaries-VNM-ADM1.geojson')
-
-    // Tạo control layer ở góc phải trên
+    // Control layer
     var overlayLayers = {
         "Cluster Marker": markerCluster
-        // "Ranh giới tỉnh" sẽ được thêm sau khi load xong GeoJSON
+        // "Ranh giới tỉnh" sẽ thêm sau khi load xong GeoJSON
     };
     var layerControl = L.control.layers(baseLayers, overlayLayers, {collapsed:false, position:'topright'}).addTo(map);
 
-    // Thêm tính năng đo khoảng cách (PolylineMeasure) vào 1 box riêng
+    // Đo khoảng cách (PolylineMeasure)
     L.control.polylineMeasure({
         position: 'topright',
         unit: 'kilometres',
@@ -186,28 +192,6 @@
         startCircle: { color: '#FF0080', fillColor: '#FF0080', fillOpacity: 1, radius: 5 },
         endCircle: { color: '#FF0080', fillColor: '#FF0080', fillOpacity: 1, radius: 5 }
     }).addTo(map);
-
-    // Hướng dẫn sử dụng
-    L.Control.Info = L.Control.extend({
-        onAdd: function(map) {
-            var div = L.DomUtil.create('div', 'info');
-            div.innerHTML = `<b>Hướng dẫn:</b>
-                <ul style="margin:5px 0 0 17px;padding:0;font-size:13px;">
-                    <li>Chọn lớp nền ở góc phải trên.</li>
-                    <li>Kéo thả marker, double click để thêm marker mới.</li>
-                    <li>Click vào cluster để zoom vào nhóm marker.</li>
-                    <li>Search box góc trái trên để tìm địa điểm.</li>
-                    <li>Box đo khoảng cách ở góc phải trên.</li>
-                </ul>`;
-            div.style.background = 'rgba(255,255,255,0.95)';
-            div.style.padding = '7px 12px';
-            div.style.borderRadius = '6px';
-            div.style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
-            return div;
-        }
-    });
-    L.control.info = function(opts) { return new L.Control.Info(opts); }
-    L.control.info({position: 'bottomright'}).addTo(map);
     </script>
 </body>
 </html>
