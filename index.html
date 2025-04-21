@@ -2,53 +2,105 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>WebGIS Việt Nam - Ranh giới tỉnh, Marker tùy chọn tên</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Leaflet & plugin CSS -->
+    <title>WebGIS Việt Nam - Ranh giới tỉnh, Marker tùy chọn</title>
+    
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
     <link rel="stylesheet" href="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.css"/>
+    
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; }
-        #map { height: 100vh; width: 100vw; }
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+        }
+        #map { 
+            height: 100vh; 
+            width: 100vw; 
+        }
         #header {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            z-index: 1001; background: #0077cc; color: white; padding: 8px 20px;
-            border-radius: 6px; font-size: 20px; font-weight: bold;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            background: #0077cc;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 20px;
+            font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .marker-count-box {
-            position: absolute; bottom: 15px; left: 15px; z-index: 1001;
-            background: rgba(255,255,255,0.92); padding: 7px 15px;
-            border-radius: 6px; font-size: 15px; color: #333;
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: rgba(255,255,255,0.92);
+            padding: 7px 15px;
+            border-radius: 6px;
+            font-size: 15px;
+            color: #333;
             box-shadow: 0 2px 8px rgba(0,0,0,0.10);
         }
-        .custom-popup label { display: block; margin-bottom: 4px; }
-        .custom-popup input[type="text"] { width: 90%; padding: 4px;}
-        .custom-popup button { margin-top: 4px; }
+        .custom-popup label { 
+            display: block; 
+            margin-bottom: 4px; 
+        }
+        .custom-popup input[type="text"] { 
+            width: 90%; 
+            padding: 4px;
+        }
+        .custom-popup button { 
+            margin-top: 4px; 
+            padding: 4px 8px;
+        }
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777;
+        }
         @media (max-width: 600px) {
-            #header { font-size: 16px; padding: 6px 10px; }
-            .marker-count-box { font-size: 13px; padding: 4px 8px; }
+            #header { 
+                font-size: 16px; 
+                padding: 6px 10px; 
+            }
+            .marker-count-box { 
+                font-size: 13px; 
+                padding: 4px 8px; 
+            }
         }
     </style>
 </head>
 <body>
-    <div id="header">WebGIS Việt Nam: Ranh giới tỉnh, Marker đặt tên, Đo khoảng cách</div>
+    <div id="header">WebGIS Việt Nam: Ranh giới tỉnh, Marker tùy chọn, Đo khoảng cách</div>
     <div id="map"></div>
     <div class="marker-count-box" id="markerCountBox">Số marker: 0</div>
 
-    <!-- Leaflet & plugin JS -->
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://unpkg.com/leaflet-providers/leaflet-providers.js"></script>
     <script src="https://ppete2.github.io/Leaflet.PolylineMeasure/Leaflet.PolylineMeasure.js"></script>
+    
     <script>
     // Khởi tạo bản đồ
     var map = L.map('map', {
-        center: [16, 106],
+        center: [16.0, 106.0],
         zoom: 6,
         minZoom: 5,
         maxZoom: 18
@@ -75,8 +127,9 @@
         })
     };
 
-    // Nhóm marker cluster
+    // Tạo nhóm marker cluster
     var markerCluster = L.markerClusterGroup();
+    map.addLayer(markerCluster);
 
     // Hàm cập nhật số lượng marker
     function updateMarkerCount() {
@@ -126,6 +179,7 @@
         {name: "Hồ Chí Minh", lat: 10.8, lng: 106.65},
         {name: "Đà Nẵng", lat: 16.06944, lng: 108.20972}
     ];
+    
     cityData.forEach(function(city) {
         var marker = L.marker([city.lat, city.lng], {draggable:true})
             .bindPopup('<b>' + city.name + '</b>');
@@ -135,14 +189,83 @@
         });
         markerCluster.addLayer(marker);
     });
-    map.addLayer(markerCluster);
-    markerCluster.on('clusterclick', function (a) {
-        map.fitBounds(a.layer.getBounds());
-    });
-    markerCluster.on('animationend', updateMarkerCount);
-    markerCluster.on('layeradd', updateMarkerCount);
-    markerCluster.on('layerremove', updateMarkerCount);
+    
     updateMarkerCount();
+
+    // Thêm control thông tin
+    var info = L.control();
+    
+    info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info');
+        this.update();
+        return this._div;
+    };
+    
+    info.update = function (props) {
+        this._div.innerHTML = '<h4>Thông tin tỉnh/thành phố</h4>' +  
+            (props ? '<b>' + props.Name_VN + '</b>' : 'Di chuột qua một tỉnh');
+    };
+    
+    info.addTo(map);
+
+    // Style cho ranh giới tỉnh
+    function style(feature) {
+        return {
+            fillColor: '#fd8d3c',
+            weight: 2,
+            opacity: 0.7,
+            color: '#fd8d3c',
+            dashArray: '3',
+            fillOpacity: 0.1
+        };
+    }
+
+    // Highlight tỉnh khi hover
+    function highlightFeature(e) {
+        var layer = e.target;
+        
+        layer.setStyle({
+            weight: 3,
+            color: '#ff4500',
+            dashArray: '',
+            fillOpacity: 0.3
+        });
+        
+        layer.bringToFront();
+        info.update(layer.feature.properties);
+    }
+    
+    function resetHighlight(e) {
+        provinceLayer.resetStyle(e.target);
+        info.update();
+    }
+    
+    function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
+    }
+    
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+            click: zoomToFeature
+        });
+    }
+
+    // Tải dữ liệu GeoJSON ranh giới tỉnh
+    var provinceLayer;
+    fetch('Vietnam_districts.json')
+        .then(response => response.json())
+        .then(data => {
+            provinceLayer = L.geoJSON(data, {
+                style: style,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+            
+            // Thêm vào control layers
+            layerControl.addOverlay(provinceLayer, "Ranh giới tỉnh");
+        })
+        .catch(error => console.error('Lỗi khi tải dữ liệu GeoJSON:', error));
 
     // Search box
     L.Control.geocoder({
@@ -155,22 +278,6 @@
         createInputPopup(e.geocode.center);
     })
     .addTo(map);
-
-    // Overlay ranh giới tỉnh Việt Nam (GeoJSON)
-    var provinceBoundaryLayer;
-    fetch('Vietnam_districts.geojson')
-        .then(res => res.json())
-        .then(geojson => {
-            provinceBoundaryLayer = L.geoJSON(geojson, {
-                style: { color: '#FF6600', weight: 1, fillOpacity: 0.05 },
-                onEachFeature: function(feature, layer) {
-                    if (feature.properties && feature.properties.NAME_1) {
-                        layer.bindPopup('Tỉnh: <b>' + feature.properties.NAME_1 + '</b>');
-                    }
-                }
-            }).addTo(map);
-            layerControl.addOverlay(provinceBoundaryLayer, "Ranh giới tỉnh");
-        });
 
     // Control layer
     var overlayLayers = {
