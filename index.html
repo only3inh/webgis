@@ -1,108 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Cai Nuoc, Ca Mau - Population Density WebGIS</title>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8">
+    <title>Nong The Binh 2106060012 - Cai Nuoc, Ca Mau WebGIS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        #map { width: 100%; height: 100vh; }
+        body { margin: 0; padding: 0; }
+        h1 {
+            margin: 0;
+            padding: 16px 0 8px 0;
+            text-align: center;
+            background: #f6f6f6;
+            font-size: 2em;
+            font-family: Arial, sans-serif;
+        }
+        #map { width: 100vw; height: 92vh; }
         .legend {
-            background: rgba(255,255,255,0.9);
-            padding: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 10px 16px;
             line-height: 22px;
-            border-radius: 6px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+            font-size: 15px;
+            color: #222;
+        }
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-align: left;
         }
         .legend i {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             float: left;
             margin-right: 8px;
             opacity: 0.8;
         }
+        .commune-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #222;
+            text-shadow: 0 0 3px #fff, 0 0 2px #fff;
+        }
     </style>
 </head>
 <body>
-    <h1>Nong The Binh - 2106060012A</h1>
+    <h1>Nguyen Van A</h1>
     <div id="map"></div>
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Center map on Cai Nuoc, Ca Mau
-        var map = L.map('map').setView([8.9447, 104.9113], 11);
+        // Center on Cai Nuoc, Ca Mau
+        var map = L.map('map').setView([8.98, 105.07], 11);
 
-        // Add OpenStreetMap base layer
+        // Add OpenStreetMap background
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Graduated color function for population density
-        function getColor(d) {
+        // Color for population density
+        function getDensityColor(d) {
             return d > 1000 ? '#800026' :
                    d > 500  ? '#BD0026' :
-                   d > 250  ? '#E31A1C' :
-                   d > 100  ? '#FC4E2A' :
-                   d > 50   ? '#FD8D3C' :
-                   d > 10   ? '#FEB24C' :
+                   d > 300  ? '#E31A1C' :
+                   d > 200  ? '#FC4E2A' :
+                   d > 100  ? '#FD8D3C' :
+                   d > 50   ? '#FEB24C' :
                    d > 0    ? '#FED976' :
                               '#FFEDA0';
         }
 
-        function style(feature) {
+        function styleCommune(feature) {
+            // Use 'ppkm2' or 'Population density' property
+            var d = feature.properties.ppkm2 || feature.properties['Population density'] || 0;
             return {
-                fillColor: getColor(feature.properties.density),
+                fillColor: getDensityColor(d),
                 weight: 1,
                 opacity: 1,
-                color: 'white',
+                color: '#fff',
                 dashArray: '2',
                 fillOpacity: 0.7
             };
         }
 
-        function onEachFeature(feature, layer) {
-            // Always show commune name as label
-            if (feature.properties && feature.properties.name) {
-                layer.bindTooltip(feature.properties.name, {
-                    permanent: true,
-                    direction: 'center',
-                    className: 'commune-label'
-                });
-            }
-            // Optional: Popup with more info
-            if (feature.properties && feature.properties.density) {
-                layer.bindPopup(
-                    "<b>" + feature.properties.name + "</b><br>" +
-                    "Population Density: " + feature.properties.density + " people/km²"
-                );
-            }
-        }
-
-        // Load population density GeoJSON (update the URL to your actual file location)
-        fetch('population-density.geojson')
-            .then(response => response.json())
-            .then(data => {
-                L.geoJSON(data, {
-                    style: style,
-                    onEachFeature: onEachFeature
-                }).addTo(map);
+        function onEachCommune(feature, layer) {
+            // Label: NAME_3 (commune name)
+            var name = feature.properties.NAME_3 || feature.properties['Commune/Ward'] || '';
+            layer.bindTooltip(name, {
+                permanent: true,
+                direction: 'center',
+                className: 'commune-label'
             });
 
-        // Legend in the upper right corner
+            // Popup with details
+            var density = feature.properties.ppkm2 || feature.properties['Population density'] || '';
+            var type = feature.properties.ENGTYPE_3 || '';
+            var area = feature.properties.area_m2 ? (feature.properties.area_m2/1e6).toFixed(2) + ' km²' : '';
+            var pop = feature.properties._sum ? Math.round(feature.properties._sum) : '';
+            layer.bindPopup(
+                `<b>${name}</b><br>
+                Type: ${type}<br>
+                Population density: ${density} people/km²<br>
+                Area: ${area}<br>
+                Population: ${pop}`
+            );
+        }
+
+        // Add population density GeoJSON
+        fetch('https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/55830604/9c7d7fbd-4a6d-424b-974a-c74c942f492c/population-density.geojson')
+        .then(resp => resp.json())
+        .then(data => {
+            var communeLayer = L.geoJSON(data, {
+                style: styleCommune,
+                onEachFeature: onEachCommune
+            }).addTo(map);
+            map.fitBounds(communeLayer.getBounds());
+        });
+
+        // Add legend (upper right)
         var legend = L.control({position: 'topright'});
         legend.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'legend'),
-                grades = [0, 10, 50, 100, 250, 500, 1000],
-                labels = [];
-            div.innerHTML += '<b>Population Density<br>(people/km²)</b><br>';
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML += '<div class="legend-title">Population Density<br>(people/km²)</div>';
+            var grades = [0, 50, 100, 200, 300, 500, 1000];
             for (var i = 0; i < grades.length; i++) {
                 div.innerHTML +=
-                    '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                    '<i style="background:' + getDensityColor(grades[i] + 1) + '"></i> ' +
                     grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
             }
             return div;
         };
         legend.addTo(map);
+
+        // OPTIONAL: Add elevation layer (if needed, as transparent polygons or lines)
+        // Uncomment below to add elevation.geojson as a border/outline layer
+        /*
+        fetch('https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/55830604/5f9d106c-3bbd-4067-97d3-b7758edb3903/elevation.geojson')
+        .then(resp => resp.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: {
+                    color: '#3388ff',
+                    weight: 1,
+                    fillOpacity: 0
+                }
+            }).addTo(map);
+        });
+        */
     </script>
 </body>
 </html>
