@@ -1,68 +1,230 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Commune Population Density WebGIS</title>
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGIS Ha Lang District</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
         #map {
+            width: 100%;
             height: 100vh;
         }
         .legend {
+            padding: 6px 8px;
+            font: 14px Arial, Helvetica, sans-serif;
             background: white;
-            padding: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
             border-radius: 5px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            line-height: 24px;
+            color: #555;
         }
-        .legend span {
-            display: block;
+        .legend h4 {
+            text-align: center;
+            font-size: 16px;
+            margin: 2px 12px 8px;
+            color: #777;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin: 0 8px 0 0;
+            opacity: 0.7;
+        }
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
+    <div id="map"></div>
 
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-choropleth@0.2.0/leaflet-choropleth.min.js"></script>
-
-<script>
-// Initialize the map
-var map = L.map('map').setView([22.7, 106.0], 12); // Coordinates for Ha Lang district
-
-// Add OpenStreetMap layer as background
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-
-// GeoJSON data for communes (you need to replace this with actual GeoJSON data)
-var communeLayer = L.geoJSON(null, {
-    onEachFeature: function (feature, layer) {
-        layer.bindPopup(feature.properties.name); // Bind the name of the commune
-    }
-});
-
-// Example GeoJSON URL (replace this with actual URL or data for Ha Lang commune)
-fetch('https://your-geojson-source-url/ha-lang-communes.geojson')
-    .then(response => response.json())
-    .then(data => {
-        communeLayer.addData(data);
-        communeLayer.addTo(map);
-    })
-    .catch(error => console.error('Error loading GeoJSON:', error));
-
-// Add a legend
-var legend = L.control({ position: 'bottomright' });
-
-legend.onAdd = function() {
-    var div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = '<span>Commune Layers</span>';
-    return div;
-};
-
-legend.addTo(map);
-
-</script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([48.8566, 2.3522], 10); // Default view (Paris area - adjust to your study area)
+        
+        // Add OpenStreetMap base layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Define color function for population density
+        function getColor(d) {
+            return d > 1000 ? '#7A1B77' : 
+                   d > 500  ? '#9C3587' : 
+                   d > 250  ? '#BD4F97' : 
+                   d > 100  ? '#DE69A8' : 
+                   d > 50   ? '#FF84B8' : 
+                              '#FFCCE5';
+        }
+        
+        // Define style function for communes
+        function style(feature) {
+            return {
+                fillColor: getColor(feature.properties.density),
+                weight: 1,
+                opacity: 1,
+                color: 'white',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
+        
+        // Create the legend
+        var legend = L.control({position: 'topright'});
+        
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend');
+            
+            // Legend title
+            div.innerHTML = '<h4>Population Density</h4>';
+            
+            // Define the density grades
+            var grades = [0, 50, 100, 250, 500, 1000];
+            var labels = [];
+            
+            // Loop through density intervals and generate a label with a colored square for each interval
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+            
+            return div;
+        };
+        
+        legend.addTo(map);
+        
+        // Function to add labels to communes
+        function onEachFeature(feature, layer) {
+            // Add permanent label
+            layer.bindTooltip(feature.properties.name, {
+                permanent: true,
+                direction: 'center',
+                className: 'commune-label'
+            });
+            
+            // Add popup with more information
+            layer.bindPopup(
+                "<b>" + feature.properties.name + "</b><br>" +
+                "Population: " + feature.properties.population + "<br>" +
+                "Area: " + feature.properties.area + " km²<br>" +
+                "Density: " + feature.properties.density + " people/km²"
+            );
+        }
+        
+        // Load GeoJSON data (you'll need to replace this with your actual data)
+        // This is a placeholder. You should replace it with your actual GeoJSON data
+        var communesData = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Commune A",
+                        "population": 25000,
+                        "area": 15,
+                        "density": 1667
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[2.3, 48.8], [2.35, 48.8], [2.35, 48.85], [2.3, 48.85], [2.3, 48.8]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Commune B",
+                        "population": 15000,
+                        "area": 20,
+                        "density": 750
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[2.36, 48.8], [2.41, 48.8], [2.41, 48.85], [2.36, 48.85], [2.36, 48.8]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Commune C",
+                        "population": 8000,
+                        "area": 25,
+                        "density": 320
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[2.3, 48.86], [2.35, 48.86], [2.35, 48.91], [2.3, 48.91], [2.3, 48.86]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Commune D",
+                        "population": 5000,
+                        "area": 30,
+                        "density": 167
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[2.36, 48.86], [2.41, 48.86], [2.41, 48.91], [2.36, 48.91], [2.36, 48.86]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Commune E",
+                        "population": 2000,
+                        "area": 35,
+                        "density": 57
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[2.3, 48.92], [2.35, 48.92], [2.35, 48.97], [2.3, 48.97], [2.3, 48.92]]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Commune F",
+                        "population": 1000,
+                        "area": 40,
+                        "density": 25
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[2.36, 48.92], [2.41, 48.92], [2.41, 48.97], [2.36, 48.97], [2.36, 48.92]]]
+                    }
+                }
+            ]
+        };
+        
+        // Add GeoJSON layer with commune data
+        L.geoJSON(communesData, {
+            style: style,
+            onEachFeature: onEachFeature
+        }).addTo(map);
+        
+        // Fit map to the bounds of the communes
+        map.fitBounds(L.geoJSON(communesData).getBounds());
+    </script>
 </body>
 </html>
